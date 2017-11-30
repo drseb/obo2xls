@@ -3,6 +3,7 @@ package de.phenomics;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -122,9 +123,6 @@ public class Obo2Xls {
 		XSSFCellStyle style = wb.createCellStyle();
 		style.setFont(bold);
 
-		/*
-		 * New terms report
-		 */
 		Sheet sheet0 = wb.createSheet("Excel version of " + fileNameParsedOboFrom + " version: " + date);
 		int rowIndex = 0;
 		String[] headersTermAdd = new String[] { "Class Label", "Class ID", "Alternative IDs", "Synonyms (separated by semicolon)", "Definition",
@@ -132,7 +130,14 @@ public class Obo2Xls {
 
 		rowIndex = createHeaderRow(createHelper, style, rowIndex, sheet0, headersTermAdd);
 
-		for (Term term : ontology) {
+		ArrayList<Term> termsToReport = new ArrayList<>();
+		if (selectedRootTerm != null) {
+			termsToReport.addAll(ontologySlim.getDescendants(selectedRootTerm));
+		} else {
+			termsToReport.addAll(ontology.getAllTerms());
+		}
+
+		for (Term term : termsToReport) {
 
 			Row row = sheet0.createRow((short) rowIndex++);
 
