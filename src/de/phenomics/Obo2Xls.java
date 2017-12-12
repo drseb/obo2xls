@@ -3,9 +3,7 @@ package de.phenomics;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
@@ -87,7 +85,7 @@ public class Obo2Xls {
 		File oboFilePathFile = new File(oboFilePath);
 		Ontology ontology = OntologyUtil.parseOntology(oboFilePathFile.getAbsolutePath());
 
-		Term selectedRootTerm = null;
+		Term selectedRootTerm = ontology.getRootTerm();
 		if (classId != null) {
 			classId = classId.trim();
 			if (!classId.equals("")) {
@@ -131,40 +129,7 @@ public class Obo2Xls {
 
 		rowIndex = createHeaderRow(createHelper, style, rowIndex, sheet0, headersTermAdd);
 
-		ArrayList<Term> termsInTopologicalOrder = ontology.getTermsInTopologicalOrder();
-		HashSet<Term> termsToReport = new HashSet<>();
-		if (selectedRootTerm != null) {
-			termsToReport.addAll(ontologySlim.getDescendants(selectedRootTerm));
-		} else {
-			termsToReport.addAll(ontology.getAllTerms());
-		}
-
-		for (Term term : termsInTopologicalOrder) {
-
-			if (term.isObsolete())
-				continue;
-
-			if (!termsToReport.contains(term))
-				continue;
-
-			Row row = sheet0.createRow((short) rowIndex++);
-
-			int columnIndex = 0;
-			row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(term.getName()));
-			row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(term.getIDAsString()));
-
-			String altIds = Arrays.stream(term.getAlternatives()).map(Object::toString).collect(Collectors.joining("; "));
-			row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(altIds));
-
-			String synonyms = String.join("; ", term.getSynonymsArrayList());
-
-			row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(synonyms));
-			row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(term.getDefinition()));
-
-			String parents = ontologySlim.getParents(term).stream().map(Object::toString).collect(Collectors.joining("; "));
-			row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(parents));
-
-		}
+		recursiveWriteTermsAndTheirChildren();
 
 		for (int i = 0; i < wb.getNumberOfSheets(); i++) {
 			wb.getSheetAt(i).setDefaultColumnWidth(defaultColumnWidth);
@@ -172,6 +137,40 @@ public class Obo2Xls {
 
 		wb.write(fileOut);
 		fileOut.close();
+	}
+
+	private static void recursiveWriteTermsAndTheirChildren() {
+		// if (term.isObsolete())
+		// continue;
+		//
+		// if (!termsToReport.contains(term))
+		// continue;
+		//
+		// createRowForTerm(term, rowIndex++, sheet0, createHelper, ontologySlim);
+
+	}
+
+	private static void createRowForTerm(Term term, int rowIndex, Sheet sheet0, XSSFCreationHelper createHelper,
+			SlimDirectedGraphView<Term> ontologySlim) {
+
+		Row row = sheet0.createRow((short) rowIndex);
+
+		int columnIndex = 0;
+
+		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(term.getName()));
+		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(term.getIDAsString()));
+
+		String altIds = Arrays.stream(term.getAlternatives()).map(Object::toString).collect(Collectors.joining("; "));
+		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(altIds));
+
+		String synonyms = String.join("; ", term.getSynonymsArrayList());
+
+		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(synonyms));
+		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(term.getDefinition()));
+
+		String parents = ontologySlim.getParents(term).stream().map(Object::toString).collect(Collectors.joining("; "));
+		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(parents));
+
 	}
 
 	private static int createHeaderRow(XSSFCreationHelper createHelper, XSSFCellStyle style, int rowIndex, Sheet sheet, String[] strings) {
