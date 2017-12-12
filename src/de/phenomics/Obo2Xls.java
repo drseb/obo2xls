@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
@@ -130,14 +131,21 @@ public class Obo2Xls {
 
 		rowIndex = createHeaderRow(createHelper, style, rowIndex, sheet0, headersTermAdd);
 
-		ArrayList<Term> termsToReport = new ArrayList<>();
+		ArrayList<Term> termsInTopologicalOrder = ontology.getTermsInTopologicalOrder();
+		HashSet<Term> termsToReport = new HashSet<>();
 		if (selectedRootTerm != null) {
 			termsToReport.addAll(ontologySlim.getDescendants(selectedRootTerm));
 		} else {
 			termsToReport.addAll(ontology.getAllTerms());
 		}
 
-		for (Term term : termsToReport) {
+		for (Term term : termsInTopologicalOrder) {
+
+			if (term.isObsolete())
+				continue;
+
+			if (!termsToReport.contains(term))
+				continue;
 
 			Row row = sheet0.createRow((short) rowIndex++);
 
