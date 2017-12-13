@@ -3,8 +3,12 @@ package de.phenomics;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+
+import ontologizer.go.Ontology;
+import ontologizer.go.Term;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -14,15 +18,15 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFCreationHelper;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import ontologizer.go.Ontology;
-import ontologizer.go.Term;
 import sonumina.math.graph.SlimDirectedGraphView;
 import util.OntologyUtil;
 
@@ -34,6 +38,8 @@ import util.OntologyUtil;
  *
  */
 public class Obo2Xls {
+
+	private static int rowIndexNextRow;
 
 	public static void main(String[] args) throws IOException, ParseException {
 
@@ -62,15 +68,14 @@ public class Obo2Xls {
 		// check that required parameters are set
 		String parameterError = null;
 		if (oboFilePath == null) {
-			parameterError = "Please provide the obo file using " + ontologyOpt.getOpt() + " or " + ontologyOpt.getLongOpt();
-		}
-		if (!(new File(oboFilePath).exists())) {
+			parameterError = "Please provide the obo file using -" + ontologyOpt.getOpt() + " or --" + ontologyOpt.getLongOpt();
+		} else if (!(new File(oboFilePath).exists())) {
 			parameterError = "obo file does not exist!";
 		}
 
 		/*
-		 * Maybe something was wrong with the parameter. Print help for the user and die
-		 * here...
+		 * Maybe something was wrong with the parameter. Print help for the user
+		 * and die here...
 		 */
 		if (parameterError != null) {
 			String className = Obo2Xls.class.getSimpleName();
@@ -93,8 +98,8 @@ public class Obo2Xls {
 				if (t != null) {
 					selectedRootTerm = t;
 				} else {
-					System.err.println(
-							"Warning! You selected " + classId + " as class to be investigated, but this ID couldn't be found in the ontology.");
+					System.err.println("Warning! You selected " + classId
+							+ " as class to be investigated, but this ID couldn't be found in the ontology.");
 				}
 			}
 		}
@@ -123,13 +128,14 @@ public class Obo2Xls {
 		style.setFont(bold);
 
 		Sheet sheet0 = wb.createSheet("Excel version of " + fileNameParsedOboFrom + " version: " + date);
-		int rowIndex = 0;
 		String[] headersTermAdd = new String[] { "Class Label", "Class ID", "Alternative IDs", "Synonyms (separated by semicolon)", "Definition",
 				"Subclass-of (label+id)" };
 
-		rowIndex = createHeaderRow(createHelper, style, rowIndex, sheet0, headersTermAdd);
+		rowIndexNextRow = 1;
 
-		recursiveWriteTermsAndTheirChildren();
+		createHeaderRow(createHelper, style, sheet0, headersTermAdd);
+
+		recursiveWriteTermsAndTheirChildren(selectedRootTerm, wb, sheet0, createHelper, ontologySlim, false, false);
 
 		for (int i = 0; i < wb.getNumberOfSheets(); i++) {
 			wb.getSheetAt(i).setDefaultColumnWidth(defaultColumnWidth);
@@ -139,42 +145,66 @@ public class Obo2Xls {
 		fileOut.close();
 	}
 
-	private static void recursiveWriteTermsAndTheirChildren() {
-		// if (term.isObsolete())
-		// continue;
-		//
-		// if (!termsToReport.contains(term))
-		// continue;
-		//
-		// createRowForTerm(term, rowIndex++, sheet0, createHelper, ontologySlim);
+	private static void recursiveWriteTermsAndTheirChildren(Term currentTerm, XSSFWorkbook wb, Sheet sheet0, XSSFCreationHelper createHelper,
+			SlimDirectedGraphView<Term> ontologySlim, boolean style, boolean isLast) {
 
+		if (currentTerm.isObsolete())
+			return;
+
+		createRowForTerm(currentTerm, sheet0, createHelper, ontologySlim, wb, style);
+
+		ArrayList<Term> children = ontologySlim.getChildren(currentTerm);
+		for (int i = 0; i < children.size(); i++) {
+			Term child = children.get(i);
+			boolean isLastChild = (i == children.size() - 1);
+			recursiveWriteTermsAndTheirChildren(child, wb, sheet0, createHelper, ontologySlim, !style, isLastChild);
+		}
+		if (children.size() < 1 && isLast)
+			++rowIndexNextRow;
 	}
 
-	private static void createRowForTerm(Term term, int rowIndex, Sheet sheet0, XSSFCreationHelper createHelper,
-			SlimDirectedGraphView<Term> ontologySlim) {
+	private static void createRowForTerm(Term term, Sheet sheet0, XSSFCreationHelper createHelper, SlimDirectedGraphView<Term> ontologySlim,
+			XSSFWorkbook wb, boolean style) {
 
-		Row row = sheet0.createRow((short) rowIndex);
-
+		Row row = sheet0.createRow(rowIndexNextRow);
+		rowIndexNextRow++;
 		int columnIndex = 0;
 
-		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(term.getName()));
-		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(term.getIDAsString()));
+		XSSFCellStyle style1 = null;
+		if (style) {
+			style1 = wb.createCellStyle();
+			style1.setFillForegroundColor(new XSSFColor(new java.awt.Color(220, 220, 220)));
+			style1.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		}
+		addCellWithStyle(term.getName(), createHelper, row, columnIndex++, style1);
+
+		addCellWithStyle(term.getIDAsString(), createHelper, row, columnIndex++, style1);
 
 		String altIds = Arrays.stream(term.getAlternatives()).map(Object::toString).collect(Collectors.joining("; "));
-		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(altIds));
+		addCellWithStyle(altIds, createHelper, row, columnIndex++, style1);
 
 		String synonyms = String.join("; ", term.getSynonymsArrayList());
+		addCellWithStyle(synonyms, createHelper, row, columnIndex++, style1);
 
-		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(synonyms));
-		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(term.getDefinition()));
+		addCellWithStyle(term.getDefinition(), createHelper, row, columnIndex++, style1);
 
 		String parents = ontologySlim.getParents(term).stream().map(Object::toString).collect(Collectors.joining("; "));
-		row.createCell(columnIndex++).setCellValue(createHelper.createRichTextString(parents));
+		addCellWithStyle(parents, createHelper, row, columnIndex++, style1);
 
 	}
 
-	private static int createHeaderRow(XSSFCreationHelper createHelper, XSSFCellStyle style, int rowIndex, Sheet sheet, String[] strings) {
-		Row headerrow = sheet.createRow((short) rowIndex++);
+	private static void addCellWithStyle(String content, XSSFCreationHelper createHelper, Row row, int columnIndex, XSSFCellStyle style1) {
+		Cell c = row.createCell(columnIndex);
+		c.setCellValue(createHelper.createRichTextString(content));
+
+		if (style1 != null) {
+			c.setCellStyle(style1);
+		}
+	}
+
+	private static void createHeaderRow(XSSFCreationHelper createHelper, XSSFCellStyle style, Sheet sheet, String[] strings) {
+		Row headerrow = sheet.createRow((short) rowIndexNextRow);
+		rowIndexNextRow++;
 		int colIndex = 0;
 		for (String s : strings) {
 			headerrow.createCell(colIndex++).setCellValue(createHelper.createRichTextString(s));
@@ -183,7 +213,6 @@ public class Obo2Xls {
 			Cell cell = headerrow.getCell(i);
 			cell.setCellStyle(style);
 		}
-		return rowIndex;
 	}
 
 	public static String getOption(Option opt, final CommandLine commandLine) {
@@ -196,4 +225,5 @@ public class Obo2Xls {
 		}
 		return null;
 	}
+
 }
