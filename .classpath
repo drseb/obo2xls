@@ -43,7 +43,7 @@
 			<attribute name="javadoc_location" value="jar:file:/Users/sebastiankohler/.m2/repository/ontologizer/ontologizer/0.0.3-SNAPSHOT/ontologizer-0.0.3-SNAPSHOT-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="var" path="M2_REPO/javautil_pheno/javautil_pheno/0.0.2-SNAPSHOT/javautil_pheno-0.0.2-SNAPSHOT.jar"/>
+	<classpathentry kind="var" path="M2_REPO/javautil_pheno/javautil_pheno/0.0.2-SNAPSHOT/javautil_pheno-0.0.2-SNAPSHOT.jar" sourcepath="/ECLIPSE_HOME"/>
 	<classpathentry kind="var" path="M2_REPO/com/google/guava/guava/23.0/guava-23.0.jar" sourcepath="M2_REPO/com/google/guava/guava/23.0/guava-23.0-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:file:/Users/sebastiankohler/.m2/repository/com/google/guava/guava/23.0/guava-23.0-javadoc.jar!/"/>
