@@ -7,9 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import ontologizer.go.Ontology;
-import ontologizer.go.Term;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -27,6 +24,8 @@ import org.apache.poi.xssf.usermodel.XSSFCreationHelper;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import ontologizer.ontology.Ontology;
+import ontologizer.ontology.Term;
 import sonumina.math.graph.SlimDirectedGraphView;
 import util.OntologyUtil;
 
@@ -53,7 +52,8 @@ public class Obo2Xls {
 		options.addOption(ontologyOpt);
 
 		// the folder where the output is written to...
-		Option classOpt = new Option("c", "class", true, "The ontology class for which the excel file shall be created.");
+		Option classOpt = new Option("c", "class", true,
+				"The ontology class for which the excel file shall be created.");
 		options.addOption(classOpt);
 
 		/*
@@ -68,14 +68,16 @@ public class Obo2Xls {
 		// check that required parameters are set
 		String parameterError = null;
 		if (oboFilePath == null) {
-			parameterError = "Please provide the obo file using -" + ontologyOpt.getOpt() + " or --" + ontologyOpt.getLongOpt();
-		} else if (!(new File(oboFilePath).exists())) {
+			parameterError = "Please provide the obo file using -" + ontologyOpt.getOpt() + " or --"
+					+ ontologyOpt.getLongOpt();
+		}
+		else if (!(new File(oboFilePath).exists())) {
 			parameterError = "obo file does not exist!";
 		}
 
 		/*
-		 * Maybe something was wrong with the parameter. Print help for the user
-		 * and die here...
+		 * Maybe something was wrong with the parameter. Print help for the user and die
+		 * here...
 		 */
 		if (parameterError != null) {
 			String className = Obo2Xls.class.getSimpleName();
@@ -97,7 +99,8 @@ public class Obo2Xls {
 				Term t = ontology.getTermIncludingAlternatives(classId);
 				if (t != null) {
 					selectedRootTerm = t;
-				} else {
+				}
+				else {
 					System.err.println("Warning! You selected " + classId
 							+ " as class to be investigated, but this ID couldn't be found in the ontology.");
 				}
@@ -111,7 +114,8 @@ public class Obo2Xls {
 
 	}
 
-	private static void createXlsFromObo(Ontology ontology, Term selectedRootTerm, String fileNameParsedOboFrom, String outfile) throws IOException {
+	private static void createXlsFromObo(Ontology ontology, Term selectedRootTerm, String fileNameParsedOboFrom,
+			String outfile) throws IOException {
 
 		SlimDirectedGraphView<Term> ontologySlim = ontology.getSlimGraphView();
 
@@ -128,8 +132,8 @@ public class Obo2Xls {
 		style.setFont(bold);
 
 		Sheet sheet0 = wb.createSheet("Excel version of " + fileNameParsedOboFrom + " version: " + date);
-		String[] headersTermAdd = new String[] { "Class Label", "Class ID", "Alternative IDs", "Synonyms (separated by semicolon)", "Definition",
-				"Subclass-of (label+id)" };
+		String[] headersTermAdd = new String[] { "Class Label", "Class ID", "Alternative IDs",
+				"Synonyms (separated by semicolon)", "Definition", "Subclass-of (label+id)" };
 
 		rowIndexNextRow = 1;
 
@@ -145,8 +149,8 @@ public class Obo2Xls {
 		fileOut.close();
 	}
 
-	private static void recursiveWriteTermsAndTheirChildren(Term currentTerm, XSSFWorkbook wb, Sheet sheet0, XSSFCreationHelper createHelper,
-			SlimDirectedGraphView<Term> ontologySlim, boolean style, boolean isLast) {
+	private static void recursiveWriteTermsAndTheirChildren(Term currentTerm, XSSFWorkbook wb, Sheet sheet0,
+			XSSFCreationHelper createHelper, SlimDirectedGraphView<Term> ontologySlim, boolean style, boolean isLast) {
 
 		if (currentTerm.isObsolete())
 			return;
@@ -163,8 +167,8 @@ public class Obo2Xls {
 			++rowIndexNextRow;
 	}
 
-	private static void createRowForTerm(Term term, Sheet sheet0, XSSFCreationHelper createHelper, SlimDirectedGraphView<Term> ontologySlim,
-			XSSFWorkbook wb, boolean style) {
+	private static void createRowForTerm(Term term, Sheet sheet0, XSSFCreationHelper createHelper,
+			SlimDirectedGraphView<Term> ontologySlim, XSSFWorkbook wb, boolean style) {
 
 		Row row = sheet0.createRow(rowIndexNextRow);
 		rowIndexNextRow++;
@@ -193,7 +197,8 @@ public class Obo2Xls {
 
 	}
 
-	private static void addCellWithStyle(String content, XSSFCreationHelper createHelper, Row row, int columnIndex, XSSFCellStyle style1) {
+	private static void addCellWithStyle(String content, XSSFCreationHelper createHelper, Row row, int columnIndex,
+			XSSFCellStyle style1) {
 		Cell c = row.createCell(columnIndex);
 		c.setCellValue(createHelper.createRichTextString(content));
 
@@ -202,7 +207,8 @@ public class Obo2Xls {
 		}
 	}
 
-	private static void createHeaderRow(XSSFCreationHelper createHelper, XSSFCellStyle style, Sheet sheet, String[] strings) {
+	private static void createHeaderRow(XSSFCreationHelper createHelper, XSSFCellStyle style, Sheet sheet,
+			String[] strings) {
 		Row headerrow = sheet.createRow((short) rowIndexNextRow);
 		rowIndexNextRow++;
 		int colIndex = 0;
