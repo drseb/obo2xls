@@ -24,8 +24,8 @@ import org.apache.poi.xssf.usermodel.XSSFCreationHelper;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import ontologizer.ontology.Ontology;
-import ontologizer.ontology.Term;
+import ontologizer.go.Ontology;
+import ontologizer.go.Term;
 import sonumina.math.graph.SlimDirectedGraphView;
 import util.OntologyUtil;
 
